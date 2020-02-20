@@ -63,7 +63,7 @@ $html = do { local $/; <$fh> };
 $html =~ s!</head>!<script src="/editor.js"></script></head>!i;
 # Do the contenteditable below dynamically from JS so we can make everything except
 # our editor controls contenteditable
-$html =~ s!<body(\s+.*?)?>!<body onload="javascript:init_editor()"$1>!i;
+$html =~ s!<body(\b[^>]*?)>!<body onload="javascript:init_editor()"$1>!i;
 
 get '/' => sub {
     my $c = shift;
