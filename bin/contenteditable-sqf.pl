@@ -146,7 +146,7 @@ function init_editor() {
     });
     sourcearea.addEventListener('input', (el) => {
         if( sourcearea == document.activeElement ) {
-            console.log("Updating from textarea");
+            //console.log("Updating from textarea");
             editablearea.innerHTML = sourcearea.value;
         } else {
             // console.log("Already during update");
