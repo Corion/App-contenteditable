@@ -91,6 +91,7 @@ app->start;
 
 __DATA__
 @@ editor.js
+"use strict";
 
 // update the cursor position whenever our contentEditable element
 // loses focus (onblur)
