@@ -140,17 +140,15 @@ function init_editor() {
             console.log("Updating from textarea");
             editablearea.innerHTML = sourcearea.value;
         } else {
-            console.log("Already during update");
+            // console.log("Already during update");
         }
     });
     editablearea.addEventListener('input', (el) => {
         if( document.activeElement.closest('#contenteditable_container') ) {
-            console.log("Updating from HTML contentEditable");
+            // console.log("Updating from HTML contentEditable");
             sourcearea.value = editablearea.innerHTML;
-            console.log("Updating from HTML contentEditable done");
-
         } else {
-            console.log("contentEditable area does not have focus, nothing to do");
+            // console.log("contentEditable area does not have focus, nothing to do");
         }
     });
 }
