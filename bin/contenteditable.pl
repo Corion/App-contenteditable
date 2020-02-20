@@ -166,18 +166,38 @@ function toggle_source() {
     window.documentElement
 }
 
-
-
 async function initiateSave(doc) {
     // show "saving" animation
-    let body = sourcearea.value;
+    let newDocument = doc.documentElement.cloneNode(true);
+    let newBody = newDocument.firstChild;
+    while( newBody.tagName !== 'BODY' ) {
+        newBody = newBody.nextSibling
+    };
+    let n = newBody.firstChild;
+    while( n ) {
+        if( n.id == 'contenteditor_container') {
+            let kill = n;
+            n = n.prevSibling || n.nextSibling;
+            newBody.removeChild(kill);
+
+        } else if( n.id == 'contenteditable_container') {
+            let content = n.childNodes;
+            while( content.length ) {
+                newBody.insertBefore( content[0], n );
+            };
+            newBody.removeChild(n);
+            break;
+        } else {
+            n = n.nextSibling;
+        };
+    };
     await fetch(
         '/save', {
             "method": 'POST',
             "headers": {
                 'Content-Type' : 'text/html',
             },
-            "body": body,
+            "body": '<html>' + newDocument.innerHTML + '</html>',
         }
     );
 };
