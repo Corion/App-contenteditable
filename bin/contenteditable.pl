@@ -60,7 +60,7 @@ open my $fh, '<', $filename
     or die "Couldn't read '$filename': $!";
 binmode $fh, ':encoding(UTF-8)';
 $html = do { local $/; <$fh> };
-$html =~ s!</head>!<script src="/editor.js"></script></head>!i;
+$html =~ s!</head>!<script data-contenteditor-remove="true" src="/editor.js"></script></head>!i;
 # Do the contenteditable below dynamically from JS so we can make everything except
 # our editor controls contenteditable
 $html =~ s!<body(\b[^>]*?)>!<body onload="javascript:init_editor()"$1>!i;
@@ -109,7 +109,7 @@ function init_editor() {
 
     window.document.body.innerHTML
         =
-          '<div id="contenteditor_container" style="position:fixed; top:0; width:100%">'
+          '<div id="contenteditor_container" data-contenteditor-remove="true" style="position:fixed; top:0; width:100%">'
           + '<div id="contenteditor_toolbar">'
           +     '<a href="#" onclick="javascript:insert_bold()" alt="bold"><b>B</b></a>'
           +     ' <a href="#" onclick="javascript:insert_h1()" alt="H1"><b>H1</b></a>'
@@ -118,7 +118,7 @@ function init_editor() {
           + '</div>'
           + '<textarea id="contenteditor_source" style="width:100%"></textarea>'
         + '</div>'
-        + '<div id="contenteditable_container" contenteditable="true">'
+        + '<div id="contenteditable_container" data-contenteditor-keepcontent="true" contenteditable="true">'
         + window.document.body.innerHTML
         + '</div>';
     sourcearea = document.getElementById('contenteditor_source');
@@ -166,31 +166,44 @@ function toggle_source() {
     window.documentElement
 }
 
-async function initiateSave(doc) {
-    // show "saving" animation
-    let newDocument = doc.documentElement.cloneNode(true);
-    let newBody = newDocument.firstChild;
-    while( newBody.tagName !== 'BODY' ) {
-        newBody = newBody.nextSibling
-    };
-    let n = newBody.firstChild;
+function cleanDOM( el ) {
+    let n = el.firstChild;
     while( n ) {
-        if( n.id == 'contenteditor_container') {
-            let kill = n;
-            n = n.prevSibling || n.nextSibling;
-            newBody.removeChild(kill);
+        if( n.dataset ) {
+            if( n.dataset.contenteditorRemove ) {
+                let kill = n;
+                n = n.prevSibling || n.nextSibling;
+                el.removeChild(kill);
 
-        } else if( n.id == 'contenteditable_container') {
-            let content = n.childNodes;
-            while( content.length ) {
-                newBody.insertBefore( content[0], n );
-            };
-            newBody.removeChild(n);
-            break;
+            } else if( n.dataset.contenteditorKeepcontent ) {
+                let content = n.childNodes;
+                while( content.length ) {
+                    el.insertBefore( content[0], n );
+                };
+                el.removeChild(n);
+                break;
+            } else {
+                n = cleanDOM(n);
+                n = n.nextSibling;
+            }
         } else {
+            n = cleanDOM(n);
             n = n.nextSibling;
         };
     };
+    return el;
+}
+
+async function initiateSave(doc) {
+    // show "saving" animation
+    let newDocument = doc.documentElement.cloneNode(true);
+    newDocument = cleanDOM( newDocument );
+
+    //let newBody = newDocument.firstChild;
+    //while( newBody.tagName !== 'BODY' ) {
+    //    newBody = newBody.nextSibling
+    //};
+    //newBody = cleanDOM( newBody );
     await fetch(
         '/save', {
             "method": 'POST',
