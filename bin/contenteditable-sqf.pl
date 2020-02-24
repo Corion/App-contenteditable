@@ -7,6 +7,9 @@ no warnings 'experimental::signatures';
 
 use Archive::Zip ':ERROR_CODES';
 use Encode 'decode', 'encode';
+use Mojo::JSON qw(decode_json encode_json);
+use Mojo::File;
+use File::Basename 'dirname';
 
 use Mojolicious::Lite;
 use Getopt::Long;
@@ -48,9 +51,14 @@ changes to the files on the file system.
 
 =cut
 
-my( $mode, $filename, @options ) = @ARGV;
+my( $mode, $filename, $journal, @options ) = @ARGV;
+
+# XXX nasty hack. We should instead have a switch to (optionally) specify
+# the real root directory
+my $basedir = dirname($filename);
 
 my $ar = Archive::Zip->new( $filename );
+$journal ||= $basedir . '/quicknotes/recentdb/perl-journal';
 
 # If we have a precompressed resource, serve that
 app->static->with_roles('+Compressed');
@@ -76,6 +84,27 @@ get '/' => sub {
     $c->render(text => $html);
 };
 
+sub append_carnet_journal {
+    my( $journal, @actions ) = @_;
+    my $journal_data;
+    if( -f $journal ) {
+        open my $log, '<:raw', $journal
+            or die "Couldn't read '$journal' for updating the journal: $!";
+        local $/;
+        $journal_data = decode_json( <$log> );
+    } else {
+        $journal_data = { data => [] };
+    };
+
+    my $rel_filename = Mojo::File->new( $filename )->to_rel( $basedir );
+
+    push @{ $journal_data->{data} }, @actions;
+
+    open my $fh, '>:raw', $journal
+        or die "Couldn't open '$journal' for updating the journal: $!";
+    print $fh encode_json( $journal_data );
+}
+
 # consider making this a websocket too...
 post '/save' => sub {
     my $c = shift;
@@ -90,6 +119,15 @@ post '/save' => sub {
     unless ( $ar->overwrite( $filename ) == AZ_OK ) {
        warn 'write error';
     }
+
+    # Update our journal
+    #append_carnet_journal( $journal_file,
+    #    {
+    #        "path" => $rel_filename,
+    #        "action" => "add",
+    #        "time" => time*1000
+    #    });
+
     # notify other listeners, maybe
 
     $c->redirect_to('/');
