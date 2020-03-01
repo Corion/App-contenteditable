@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test for rearranging lists</title>
+   <meta charset="UTF-8">
+<script>
+function init() {
+    // add our drag/drop handler to all UL lists
+    let dragCurrent;
+    let dragPlaceholder;
+    let items = document.querySelectorAll('li');
+    for( let i=0; i<items.length; i++) {
+        items[i].addEventListener('dragstart', (e) => {
+            if(! dragPlaceholder) {
+                dragPlaceholder = document.createElement('div');
+                dragPlaceholder.setAttribute("style", "border-top: solid black 2px;");
+                document.body.appendChild(dragPlaceholder);
+            };
+
+            // Target is the source node, remember it
+            dragCurrent = e.target;
+//console.log("Starting drag", dragCurrent, dragCurrent.offsetWidth);
+            dragPlaceholder.width = dragCurrent.offsetWidth;
+
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }, false);
+        items[i].addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            // The last element in that list is what we want
+            if(e.target && e.target !== dragPlaceholder) {
+                e.target.parentNode.insertBefore(dragPlaceholder, e.target);
+            };
+
+            return false;
+        }, false);
+        items[i].addEventListener('dragend', (e) => {
+            e.preventDefault();
+
+            // Add sanity rules:
+            // If a node will become its own child, try making the previous
+            // (list) node the parent by appending all current children to it
+            // and then inserting the current node, merging the two lists.
+            // How can we move an element to the end of a list?
+
+            // console.log("Drop finished", dragPlaceholder.parentNode, dragPlaceholder, dragCurrent);
+            if( dragPlaceholder) {
+                if( dragPlaceholder.parentNode) {
+                    dragPlaceholder.parentNode.replaceChild(dragCurrent, dragPlaceholder);
+                } else {
+                    dragPlaceholder.remove();
+                };
+                dragPlaceholder = undefined;
+            };
+        }, false);
+    };
+
+    // (OL lists should also be handled, later)
+    // Test dragging between OL and UL (should Just work)
+}
+</script>
+<style type="text/css">
+    ul {
+        list-style:none;
+       }
+    ul li::marker {
+        content: ":: ";
+    }
+</style>
+</head>
+<body onload="javascript:init()">
+<div id="content" contenteditable="true">
+<ul draggable="true">
+<li draggable="true">Item 1</li>
+<li draggable="true">Item 2
+    <ul draggable="true">
+        <li draggable="true" contenteditable="true">Item 2.1</li>
+        <li draggable="true" contenteditable="true">Item 2.2</li>
+        <li draggable="true" contenteditable="true">Item 2.3</li>
+        <li draggable="true" contenteditable="true">Item 2.4</li>
+    </ul>
+</li>
+<li draggable="true">Item 3</li>
+<li draggable="true">Item 4</li>
+</ul>
+<ol draggable="true">
+<li draggable="true">Item 1</li>
+<li draggable="true">Item 2
+    <ol draggable="true">
+        <li draggable="true" contenteditable="true">Item 2.1</li>
+        <li draggable="true" contenteditable="true">Item 2.2</li>
+        <li draggable="true" contenteditable="true">Item 2.3</li>
+        <li draggable="true" contenteditable="true">Item 2.4</li>
+    </ol>
+</li>
+<li draggable="true">Item 3</li>
+<li draggable="true">Item 4</li>
+</ol>
+</div>
+
+</body>
+</html>

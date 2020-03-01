@@ -99,6 +99,9 @@ __DATA__
 var sourcearea;
 var editablearea;
 
+// TODO: Add ul>li drag/drop like https://stackoverflow.com/questions/10588607/tutorial-for-html5-dragdrop-sortable-list
+//       but with a placeholder instead of immediately rearranging
+
 function init_editor() {
     //let children = window.document.body.childNodes;
     //for( let i = 0; i < children.length; i++ ) {
